@@ -1,6 +1,7 @@
 import { Config } from '@pnpm/config'
 import * as logs from '@pnpm/core-loggers'
 import { LogLevel } from '@pnpm/logger'
+import { requireHooks } from '@pnpm/pnpmfile'
 import * as Rx from 'rxjs'
 import { map, mergeAll } from 'rxjs/operators'
 import createDiffer from 'ansi-diff'
@@ -12,53 +13,55 @@ import reporterForServer from './reporterForServer'
 
 export { formatWarn }
 
-export default function (
-  opts: {
-    useStderr?: boolean
-    streamParser: object
-    reportingOptions?: {
-      appendOnly?: boolean
-      logLevel?: LogLevel
-      streamLifecycleOutput?: boolean
-      throttleProgress?: number
-      outputMaxWidth?: number
-    }
-    context: {
-      argv: string[]
-      config?: Config
-    }
+export default function (opts: {
+  useStderr?: boolean
+  streamParser: object
+  reportingOptions?: {
+    appendOnly?: boolean
+    logLevel?: LogLevel
+    streamLifecycleOutput?: boolean
+    throttleProgress?: number
+    outputMaxWidth?: number
   }
-) {
+  context: {
+    argv: string[]
+    config?: Config
+  }
+}) {
   if (opts.context.argv[0] === 'server') {
     // eslint-disable-next-line
-    const log$ = Rx.fromEvent<logs.Log>(opts.streamParser as any, 'data')
+    const log$ = Rx.fromEvent<logs.Log>(opts.streamParser as any, "data");
     reporterForServer(log$, opts.context.config)
     return
   }
-  const outputMaxWidth = opts.reportingOptions?.outputMaxWidth ?? (process.stdout.columns && process.stdout.columns - 2) ?? 80
-  const output$ = toOutput$({ ...opts, reportingOptions: { ...opts.reportingOptions, outputMaxWidth } })
+  const outputMaxWidth =
+    opts.reportingOptions?.outputMaxWidth ??
+    (process.stdout.columns && process.stdout.columns - 2) ??
+    80
+  const output$ = toOutput$({
+    ...opts,
+    reportingOptions: { ...opts.reportingOptions, outputMaxWidth },
+  })
   if (opts.reportingOptions?.appendOnly) {
     const writeNext = opts.useStderr
       ? console.error.bind(console)
       : console.log.bind(console)
-    output$
-      .subscribe({
-        complete () {}, // eslint-disable-line:no-empty
-        error: (err) => console.error(err.message),
-        next: writeNext,
-      })
+    output$.subscribe({
+      complete () {}, // eslint-disable-line:no-empty
+      error: (err) => console.error(err.message),
+      next: writeNext,
+    })
     return
   }
   const diff = createDiffer({
     height: process.stdout.rows,
     outputMaxWidth,
   })
-  output$
-    .subscribe({
-      complete () {}, // eslint-disable-line:no-empty
-      error: (err) => logUpdate(err.message),
-      next: logUpdate,
-    })
+  output$.subscribe({
+    complete () {}, // eslint-disable-line:no-empty
+    error: (err) => logUpdate(err.message),
+    next: logUpdate,
+  })
   const write = opts.useStderr
     ? process.stderr.write.bind(process.stderr)
     : process.stdout.write.bind(process.stdout)
@@ -71,23 +74,32 @@ export default function (
   }
 }
 
-export function toOutput$ (
-  opts: {
-    streamParser: object
-    reportingOptions?: {
-      appendOnly?: boolean
-      logLevel?: LogLevel
-      outputMaxWidth?: number
-      streamLifecycleOutput?: boolean
-      throttleProgress?: number
-    }
-    context: {
-      argv: string[]
-      config?: Config
+export function toOutput$ (opts: {
+  streamParser: object
+  reportingOptions?: {
+    appendOnly?: boolean
+    logLevel?: LogLevel
+    outputMaxWidth?: number
+    streamLifecycleOutput?: boolean
+    throttleProgress?: number
+  }
+  context: {
+    argv: string[]
+    config?: Config
+  }
+}): Rx.Observable<string> {
+  opts = opts || {}
+  let filterLog: undefined | ((log: logs.Log) => boolean)
+  if (opts.context.config != null) {
+    const pnpmOpts = opts.context.config
+    const { ignorePnpmfile, lockfileDir, dir } = pnpmOpts
+    if (!ignorePnpmfile) {
+      const hooks: any = requireHooks(lockfileDir ?? dir, pnpmOpts)
+      if (hooks.filterLog) {
+        filterLog = hooks.filterLog
+      }
     }
   }
-): Rx.Observable<string> {
-  opts = opts || {}
   const contextPushStream = new Rx.Subject<logs.ContextLog>()
   const fetchingProgressPushStream = new Rx.Subject<logs.FetchingProgressLog>()
   const progressPushStream = new Rx.Subject<logs.ProgressLog>()
@@ -96,7 +108,8 @@ export function toOutput$ (
   const summaryPushStream = new Rx.Subject<logs.SummaryLog>()
   const lifecyclePushStream = new Rx.Subject<logs.LifecycleLog>()
   const statsPushStream = new Rx.Subject<logs.StatsLog>()
-  const packageImportMethodPushStream = new Rx.Subject<logs.PackageImportMethodLog>()
+  const packageImportMethodPushStream =
+    new Rx.Subject<logs.PackageImportMethodLog>()
   const installCheckPushStream = new Rx.Subject<logs.InstallCheckLog>()
   const registryPushStream = new Rx.Subject<logs.RegistryLog>()
   const rootPushStream = new Rx.Subject<logs.RootLog>()
@@ -104,12 +117,16 @@ export function toOutput$ (
   const linkPushStream = new Rx.Subject<logs.LinkLog>()
   const otherPushStream = new Rx.Subject<logs.Log>()
   const hookPushStream = new Rx.Subject<logs.HookLog>()
-  const skippedOptionalDependencyPushStream = new Rx.Subject<logs.SkippedOptionalDependencyLog>()
+  const skippedOptionalDependencyPushStream =
+    new Rx.Subject<logs.SkippedOptionalDependencyLog>()
   const scopePushStream = new Rx.Subject<logs.ScopeLog>()
   const requestRetryPushStream = new Rx.Subject<logs.RequestRetryLog>()
   const updateCheckPushStream = new Rx.Subject<logs.UpdateCheckLog>()
   setTimeout(() => {
     opts.streamParser['on']('data', (log: logs.Log) => {
+      if ((filterLog != null) && !filterLog(log)) {
+        return
+      }
       switch (log.name) {
       case 'pnpm:context':
         contextPushStream.next(log)
@@ -168,10 +185,10 @@ export function toOutput$ (
       case 'pnpm:update-check':
         updateCheckPushStream.next(log)
         break
-      case 'pnpm' as any: // eslint-disable-line
-      case 'pnpm:global' as any: // eslint-disable-line
-      case 'pnpm:store' as any: // eslint-disable-line
-      case 'pnpm:lockfile' as any: // eslint-disable-line
+        case "pnpm" as any: // eslint-disable-line
+        case "pnpm:global" as any: // eslint-disable-line
+        case "pnpm:store" as any: // eslint-disable-line
+        case "pnpm:lockfile" as any: // eslint-disable-line
         otherPushStream.next(log)
         break
       }
@@ -199,9 +216,8 @@ export function toOutput$ (
     summary: Rx.from(summaryPushStream),
     updateCheck: Rx.from(updateCheckPushStream),
   }
-  const outputs: Array<Rx.Observable<Rx.Observable<{msg: string}>>> = reporterForClient(
-    log$,
-    {
+  const outputs: Array<Rx.Observable<Rx.Observable<{ msg: string }>>> =
+    reporterForClient(log$, {
       appendOnly: opts.reportingOptions?.appendOnly,
       cmd: opts.context.argv[0],
       config: opts.context.config,
@@ -211,15 +227,15 @@ export function toOutput$ (
       streamLifecycleOutput: opts.reportingOptions?.streamLifecycleOutput,
       throttleProgress: opts.reportingOptions?.throttleProgress,
       width: opts.reportingOptions?.outputMaxWidth,
-    }
-  )
+    })
 
   if (opts.reportingOptions?.appendOnly) {
-    return Rx.merge(...outputs)
-      .pipe(
-        map((log: Rx.Observable<{msg: string}>) => log.pipe(map((msg) => msg.msg))),
-        mergeAll()
-      )
+    return Rx.merge(...outputs).pipe(
+      map((log: Rx.Observable<{ msg: string }>) =>
+        log.pipe(map((msg) => msg.msg))
+      ),
+      mergeAll()
+    )
   }
   return mergeOutputs(outputs)
 }

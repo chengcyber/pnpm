@@ -384,6 +384,7 @@ importers:
       '@pnpm/default-reporter': 'link:'
       '@pnpm/error': workspace:2.0.0
       '@pnpm/logger': ^4.0.0
+      '@pnpm/pnpmfile': workspace:1.0.5
       '@pnpm/types': workspace:7.4.0
       '@types/normalize-path': ^3.0.0
       '@types/ramda': 0.27.39
@@ -408,6 +409,7 @@ importers:
       '@pnpm/config': link:../config
       '@pnpm/core-loggers': link:../core-loggers
       '@pnpm/error': link:../error
+      '@pnpm/pnpmfile': link:../pnpmfile
       '@pnpm/types': link:../types
       ansi-diff: 1.1.1
       boxen: 5.1.2
@@ -2654,6 +2656,7 @@ importers:
     specifiers:
       '@pnpm/core-loggers': workspace:6.0.4
       '@pnpm/error': workspace:2.0.0
+      '@pnpm/lockfile-types': workspace:3.0.0
       '@pnpm/logger': ^4.0.0
       '@pnpm/pnpmfile': 'link:'
       '@pnpm/types': workspace:7.4.0
@@ -2662,6 +2665,7 @@ importers:
     dependencies:
       '@pnpm/core-loggers': link:../core-loggers
       '@pnpm/error': link:../error
+      '@pnpm/lockfile-types': link:../lockfile-types
       '@pnpm/types': link:../types
       chalk: 4.1.2
       path-absolute: 1.0.1
