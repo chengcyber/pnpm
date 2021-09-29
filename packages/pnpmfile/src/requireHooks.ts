@@ -1,3 +1,4 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 import path from 'path'
 import { hookLogger } from '@pnpm/core-loggers'
 import logger from '@pnpm/logger'
