@@ -1,7 +1,6 @@
 import { Config } from '@pnpm/config'
 import * as logs from '@pnpm/core-loggers'
 import { LogLevel } from '@pnpm/logger'
-import { requireHooks } from '@pnpm/pnpmfile'
 import * as Rx from 'rxjs'
 import { map, mergeAll } from 'rxjs/operators'
 import createDiffer from 'ansi-diff'
@@ -13,16 +12,19 @@ import reporterForServer from './reporterForServer'
 
 export { formatWarn }
 
+interface ReportOptions {
+  appendOnly?: boolean
+  logLevel?: LogLevel
+  streamLifecycleOutput?: boolean
+  throttleProgress?: number
+  outputMaxWidth?: number
+  filterLog?: (log: logs.Log) => boolean
+}
+
 export default function (opts: {
   useStderr?: boolean
   streamParser: object
-  reportingOptions?: {
-    appendOnly?: boolean
-    logLevel?: LogLevel
-    streamLifecycleOutput?: boolean
-    throttleProgress?: number
-    outputMaxWidth?: number
-  }
+  reportingOptions?: ReportOptions
   context: {
     argv: string[]
     config?: Config
@@ -76,30 +78,14 @@ export default function (opts: {
 
 export function toOutput$ (opts: {
   streamParser: object
-  reportingOptions?: {
-    appendOnly?: boolean
-    logLevel?: LogLevel
-    outputMaxWidth?: number
-    streamLifecycleOutput?: boolean
-    throttleProgress?: number
-  }
+  reportingOptions?: ReportOptions
   context: {
     argv: string[]
     config?: Config
   }
 }): Rx.Observable<string> {
   opts = opts || {}
-  let filterLog: undefined | ((log: logs.Log) => boolean)
-  if (opts.context.config != null) {
-    const pnpmOpts = opts.context.config
-    const { ignorePnpmfile, lockfileDir, dir } = pnpmOpts
-    if (!ignorePnpmfile) {
-      const hooks: any = requireHooks(lockfileDir ?? dir, pnpmOpts)
-      if (hooks.filterLog) {
-        filterLog = hooks.filterLog
-      }
-    }
-  }
+  const filterLog: undefined | ((log: logs.Log) => boolean) = opts.reportingOptions?.filterLog;
   const contextPushStream = new Rx.Subject<logs.ContextLog>()
   const fetchingProgressPushStream = new Rx.Subject<logs.FetchingProgressLog>()
   const progressPushStream = new Rx.Subject<logs.ProgressLog>()

@@ -384,7 +384,6 @@ importers:
       '@pnpm/default-reporter': 'link:'
       '@pnpm/error': workspace:2.0.0
       '@pnpm/logger': ^4.0.0
-      '@pnpm/pnpmfile': workspace:1.0.5
       '@pnpm/types': workspace:7.4.0
       '@types/normalize-path': ^3.0.0
       '@types/ramda': 0.27.39
@@ -409,7 +408,6 @@ importers:
       '@pnpm/config': link:../config
       '@pnpm/core-loggers': link:../core-loggers
       '@pnpm/error': link:../error
-      '@pnpm/pnpmfile': link:../pnpmfile
       '@pnpm/types': link:../types
       ansi-diff: 1.1.1
       boxen: 5.1.2
@@ -2503,6 +2501,7 @@ importers:
       '@pnpm/plugin-commands-server': workspace:3.0.34
       '@pnpm/plugin-commands-setup': workspace:1.1.7
       '@pnpm/plugin-commands-store': workspace:4.0.18
+      '@pnpm/pnpmfile': workspace:1.0.5
       '@pnpm/prepare': workspace:0.0.26
       '@pnpm/read-package-json': workspace:5.0.4
       '@pnpm/read-project-manifest': workspace:2.0.5
@@ -2595,6 +2594,7 @@ importers:
       '@pnpm/plugin-commands-server': link:../plugin-commands-server
       '@pnpm/plugin-commands-setup': link:../plugin-commands-setup
       '@pnpm/plugin-commands-store': link:../plugin-commands-store
+      '@pnpm/pnpmfile': link:../pnpmfile
       '@pnpm/prepare': link:../../privatePackages/prepare
       '@pnpm/read-package-json': link:../read-package-json
       '@pnpm/read-project-manifest': link:../read-project-manifest
@@ -5342,7 +5342,7 @@ packages:
       lru-cache: 6.0.0
 
   /@zkochan/istanbul-reports/3.0.2:
-    resolution: {integrity: sha512-GeZZ9YNlvveT1CrMqe64s9+5hNF5p9Gj6J+PRQU3OnBS/9c2y5kSFavUZ9YAuoAgxFW8tKGKWIxJK4I6HBSigg==}
+    resolution: {integrity: sha1-WkGKLJfewBd0WgUWuLSaie8jGys=}
     engines: {node: '>=8'}
     dependencies:
       html-escaper: 2.0.2
@@ -5943,7 +5943,7 @@ packages:
       sprintf-js: 1.0.3
 
   /argparse/2.0.1:
-    resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
+    resolution: {integrity: sha1-JG9Q88p4oyQPbJl+ipvR6sSeSzg=}
 
   /arr-diff/4.0.0:
     resolution: {integrity: sha1-1kYQdP6/7HHn4VI1dhoyml3HxSA=}
@@ -8504,7 +8504,7 @@ packages:
     resolution: {integrity: sha1-FQStJSMVjKpA20onh8sBQRmU6k8=}
 
   /fsevents/2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    resolution: {integrity: sha1-ilJveLj99GI7cJ4Ll1xSwkwC/Ro=}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
     requiresBuild: true
@@ -8518,7 +8518,7 @@ packages:
     resolution: {integrity: sha1-GwqzvVU7Kg1jmdKcDj6gslIHgyc=}
 
   /fuse-native/2.2.6:
-    resolution: {integrity: sha512-Y5wXd7vUsWWWIIHbjluv7jKZgPZaSVA5YWaW3I5fXIJfcGWL6IRUgoBUveQAq+D8cG9cCiGNahv9CeToccCXrw==}
+    resolution: {integrity: sha1-UXIk3hFY2az6tGXjW0Stnp0wjFY=}
     hasBin: true
     requiresBuild: true
     dependencies:
@@ -8964,7 +8964,7 @@ packages:
     dev: true
 
   /html-escaper/2.0.2:
-    resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
+    resolution: {integrity: sha1-39YAJ9o2o238viNiYsAKWCJoFFM=}
     dev: true
 
   /http-cache-semantics/4.1.0:

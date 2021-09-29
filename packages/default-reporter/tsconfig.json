@@ -19,9 +19,6 @@
       "path": "../error"
     },
     {
-      "path": "../pnpmfile"
-    },
-    {
       "path": "../types"
     }
   ]

@@ -32,7 +32,6 @@
     "@pnpm/config": "workspace:13.0.0",
     "@pnpm/core-loggers": "workspace:6.0.4",
     "@pnpm/error": "workspace:2.0.0",
-    "@pnpm/pnpmfile": "workspace:1.0.5",
     "@pnpm/types": "workspace:7.4.0",
     "ansi-diff": "^1.1.1",
     "boxen": "^5.0.0",
