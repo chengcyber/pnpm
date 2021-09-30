@@ -15,7 +15,7 @@ interface Hooks {
   // FIXME: use any since ReadPackageHook contains function override :(
   readPackage?: (pkg: any, context: HookContext) => any
   afterAllResolved?: (lockfile: Lockfile, context: HookContext) => Lockfile
-  filterLog?: (log: Log, context: HookContext) => boolean
+  filterLog?: (log: Log) => boolean
 }
 
 type Cook<T extends (...args: any[]) => any> = (
