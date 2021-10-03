@@ -217,6 +217,7 @@ export default async (opts: HeadlessOptions) => {
     includeIncompatiblePackages: opts.force,
     lockfileDir,
   })
+  const s1 = getSpan('lockfile2DepGraph');
   const { directDependenciesByImporterId, graph } = await lockfileToDepGraph(
     filteredLockfile,
     opts.force ? null : currentLockfile,
@@ -230,6 +231,7 @@ export default async (opts: HeadlessOptions) => {
       pnpmVersion: opts.currentEngine.pnpmVersion,
     } as LockfileToDepGraphOptions
   )
+  s1.end();
   if (opts.enablePnp) {
     const importerNames = fromPairs(
       opts.projects.map(({ manifest, id }) => [id, manifest.name ?? id])
@@ -285,6 +287,7 @@ export default async (opts: HeadlessOptions) => {
         ...filteredLockfile,
         packages: omit(Array.from(skipped), filteredLockfile.packages),
       }
+      const sh = getSpan('hoist');
       newHoistedDependencies = await hoist({
         extendNodePath: opts.extendNodePath,
         lockfile: hoistLockfile,
@@ -295,6 +298,7 @@ export default async (opts: HeadlessOptions) => {
         publicHoistPattern: opts.publicHoistPattern ?? [],
         virtualStoreDir,
       })
+      sh.end();
     } else {
       newHoistedDependencies = {}
     }
@@ -335,6 +339,7 @@ export default async (opts: HeadlessOptions) => {
       if (opts.enablePnp) {
         extraEnv = makeNodeRequireOption(path.join(opts.lockfileDir, '.pnp.cjs'))
       }
+      const sb = getSpan('buildModules');
       await buildModules(graph, Array.from(directNodes), {
         childConcurrency: opts.childConcurrency,
         extraBinPaths,
@@ -351,6 +356,7 @@ export default async (opts: HeadlessOptions) => {
         unsafePerm: opts.unsafePerm,
         userAgent: opts.userAgent,
       })
+      sb.end();
     }
 
     await writeModulesYaml(rootModulesDir, {
@@ -889,4 +895,18 @@ async function linkAllModules (
         )
       })
   )
+}
+
+const NS_PER_SEC = 1e9;
+export function getSpan(name: string) {
+  const startT = process.hrtime();
+  console.log(`${name} starts`);
+  return {
+    end: () => {
+      const diff = process.hrtime(startT);
+      const nanoSeconds = diff[0] * NS_PER_SEC + diff[1];;
+      const ms = Math.round(nanoSeconds / 1e6);
+      console.log(`${name} took ${ms} ms`);
+    }
+  }
 }

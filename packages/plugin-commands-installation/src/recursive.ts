@@ -38,6 +38,7 @@ import { createWorkspaceSpecs, updateToWorkspacePackagesFromManifest } from './u
 import updateToLatestSpecsFromManifest, { createLatestSpecs } from './updateToLatestSpecsFromManifest'
 import getSaveType from './getSaveType'
 import getPinnedVersion from './getPinnedVersion'
+import { getSpan } from './installDeps'
 
 type RecursiveOptions = CreateStoreControllerOptions & Pick<Config,
 | 'bail'
@@ -164,7 +165,9 @@ export default async function recursive (
 
   // For a workspace with shared lockfile
   if (opts.lockfileDir && ['add', 'install', 'remove', 'update'].includes(cmdFullName)) {
+    const sgi = getSpan('getImports');
     let importers = await getImporters()
+    sgi.end();
     const calculatedRepositoryRoot = calculateRepositoryRoot(opts.workspaceDir, importers.map(x => x.rootDir))
     const isFromWorkspace = isSubdir.bind(null, calculatedRepositoryRoot)
     importers = await pFilter(importers, async ({ rootDir }: { rootDir: string }) => isFromWorkspace(await fs.realpath(rootDir)))
@@ -258,11 +261,14 @@ export default async function recursive (
       throw new PnpmError('NO_PACKAGE_IN_DEPENDENCIES',
         'None of the specified packages were found in the dependencies of any of the projects.')
     }
+    const smr = getSpan('mutateModules');
+    console.log('mutatedImports length', mutatedImporters.length);
     const mutatedPkgs = await mutateModules(mutatedImporters, {
       ...installOpts,
       hooks,
       storeController: store.ctrl,
     })
+    smr.end();
     if (opts.save !== false) {
       await Promise.all(
         mutatedPkgs
@@ -333,6 +339,7 @@ export default async function recursive (
         }
 
         const localConfig = await memReadLocalConfig(rootDir)
+        const sA = getSpan('action');
         const newManifest = await action(
           manifest,
           {
@@ -353,6 +360,7 @@ export default async function recursive (
             storeController: store.ctrl,
           }
         )
+        sA.end();
         if (opts.save !== false) {
           await writeProjectManifest(newManifest)
         }
@@ -383,10 +391,12 @@ export default async function recursive (
       cmdFullName === 'unlink'
     )
   ) {
+    const sr = getSpan('rebuild');
     await rebuild.handler({
       ...opts,
       pending: opts.pending === true,
     }, [])
+    sr.end();
   }
 
   throwOnFail(result)

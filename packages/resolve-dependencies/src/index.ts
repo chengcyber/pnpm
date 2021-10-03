@@ -77,6 +77,7 @@ export default async function (
     strictPeerDependencies: boolean
   }
 ) {
+  const rdt = getSpan('resolveDependencyTree top');
   const {
     dependenciesTree,
     outdatedDependencies,
@@ -84,19 +85,24 @@ export default async function (
     resolvedPackagesByDepPath,
     wantedToBeSkippedPackageIds,
   } = await resolveDependencyTree(importers, opts)
+  rdt.end();
 
   const linkedDependenciesByProjectId: Record<string, LinkedDependency[]> = {}
+  console.log('imports length', importers.length);
+  const ptl = getSpan('projectsToLink');
   const projectsToLink = await Promise.all<ProjectToLink>(importers.map(async (project, index) => {
     const resolvedImporter = resolvedImporters[project.id]
     linkedDependenciesByProjectId[project.id] = resolvedImporter.linkedDependencies
     let updatedManifest: ProjectManifest | undefined = project.manifest
     let updatedOriginalManifest: ProjectManifest | undefined = project.originalManifest
     if (project.updatePackageManifest) {
+      const upm = getSpan('updateProjectManifest');
       const manifests = await updateProjectManifest(importers[index], {
         directDependencies: resolvedImporter.directDependencies,
         preserveWorkspaceProtocol: opts.preserveWorkspaceProtocol,
         saveWorkspaceProtocol: opts.saveWorkspaceProtocol,
       })
+      upm.end();
       updatedManifest = manifests[0]
       updatedOriginalManifest = manifests[1]
     } else {
@@ -117,6 +123,7 @@ export default async function (
       )
     }
 
+    // const stp = getSpan('topParents');
     const topParents = project.manifest
       ? await getTopParents(
         difference(
@@ -128,6 +135,7 @@ export default async function (
         project.modulesDir
       )
       : []
+    // stp.end();
 
     project.manifest = updatedOriginalManifest ?? project.originalManifest ?? project.manifest
     return {
@@ -141,7 +149,9 @@ export default async function (
       topParents,
     }
   }))
+  ptl.end();
 
+  const rp = getSpan('resolvePeers');
   const {
     dependenciesGraph,
     dependenciesByProjectId,
@@ -152,6 +162,7 @@ export default async function (
     strictPeerDependencies: opts.strictPeerDependencies,
     virtualStoreDir: opts.virtualStoreDir,
   })
+  rp.end();
 
   for (const { id } of projectsToLink) {
     for (const [alias, depPath] of Object.entries(dependenciesByProjectId[id])) {
@@ -175,7 +186,9 @@ export default async function (
     }
   }
 
+  const ulf = getSpan('updateLockfile');
   const { newLockfile, pendingRequiresBuilds } = updateLockfile(dependenciesGraph, opts.wantedLockfile, opts.virtualStoreDir, opts.registries) // eslint-disable-line:prefer-const
+  ulf.end();
 
   if (opts.forceFullResolution && opts.wantedLockfile != null) {
     for (const [depPath, pkg] of Object.entries(dependenciesGraph)) {
@@ -332,4 +345,18 @@ async function getTopParents (pkgNames: string[], modules: string) {
       .filter(Boolean) as DependencyManifest[]
   )
     .map(({ name, version }: DependencyManifest) => ({ name, version }))
+}
+
+const NS_PER_SEC = 1e9;
+export function getSpan(name: string) {
+  const startT = process.hrtime();
+  console.log(`${name} starts`);
+  return {
+    end: () => {
+      const diff = process.hrtime(startT);
+      const nanoSeconds = diff[0] * NS_PER_SEC + diff[1];;
+      const ms = Math.round(nanoSeconds / 1e6);
+      console.log(`${name} took ${ms} ms`);
+    }
+  }
 }

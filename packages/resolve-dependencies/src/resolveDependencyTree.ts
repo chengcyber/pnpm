@@ -102,6 +102,7 @@ export default async function<T> (
     wantedLockfile: opts.wantedLockfile,
   }
 
+  const s1 = getSpan('collect directDepsByImporterId');
   await Promise.all(importers.map(async (importer) => {
     const projectSnapshot = opts.wantedLockfile.importers[importer.id]
     // This array will only contain the dependencies that should be linked in.
@@ -134,14 +135,18 @@ export default async function<T> (
       updateDepth: -1,
       workspacePackages: opts.workspacePackages,
     }
+    const sr = getSpan(`resolveDeps for ${importer.id}`);
     directDepsByImporterId[importer.id] = await resolveDependencies(
       resolveCtx,
       importer.preferredVersions ?? {},
       importer.wantedDependencies,
       resolveOpts
     )
+    sr.end();
   }))
+  s1.end();
 
+  const s2 = getSpan('collect childrenByParentDepPath');
   ctx.pendingNodes.forEach((pendingNode) => {
     ctx.dependenciesTree[pendingNode.nodeId] = {
       children: () => buildTree(ctx, pendingNode.nodeId, pendingNode.resolvedPackage.id,
@@ -151,6 +156,7 @@ export default async function<T> (
       resolvedPackage: pendingNode.resolvedPackage,
     }
   })
+  s2.end();
 
   const resolvedImporters = {} as {
     [id: string]: {
@@ -241,4 +247,18 @@ function buildTree (
     }
   }
   return childrenNodeIds
+}
+
+const NS_PER_SEC = 1e9;
+export function getSpan(name: string) {
+  const startT = process.hrtime();
+  console.log(`${name} starts`);
+  return {
+    end: () => {
+      const diff = process.hrtime(startT);
+      const nanoSeconds = diff[0] * NS_PER_SEC + diff[1];;
+      const ms = Math.round(nanoSeconds / 1e6);
+      console.log(`${name} took ${ms} ms`);
+    }
+  }
 }

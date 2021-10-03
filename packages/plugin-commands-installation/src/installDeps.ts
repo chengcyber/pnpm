@@ -116,13 +116,19 @@ when running add/update with the --workspace option')
     typeof opts.rawLocalConfig['hoist'] !== 'undefined'
   const forcePublicHoistPattern = typeof opts.rawLocalConfig['shamefully-hoist'] !== 'undefined' ||
     typeof opts.rawLocalConfig['public-hoist-pattern'] !== 'undefined'
+  const s1 = getSpan('getProjects');
   const allProjects = opts.allProjects ?? (
     opts.workspaceDir ? await findWorkspacePackages(opts.workspaceDir, opts) : []
   )
+  s1.end();
   if (opts.workspaceDir) {
+    const s2 = getSpan('selectProjectByDir');
     const selectedProjectsGraph = opts.selectedProjectsGraph ?? selectProjectByDir(allProjects, opts.dir)
+    s2.end();
     if (selectedProjectsGraph != null) {
+      const s3 = getSpan('seqGraph');
       const sequencedGraph = sequenceGraph(selectedProjectsGraph)
+      s3.end();
       // Check and warn if there are cyclic dependencies
       if (!sequencedGraph.safe) {
         const cyclicDependenciesInfo = sequencedGraph.cycles.length > 0
@@ -134,6 +140,7 @@ when running add/update with the --workspace option')
         })
       }
 
+      const s4 = getSpan('recur');
       await recursive(allProjects,
         params,
         {
@@ -145,6 +152,7 @@ when running add/update with the --workspace option')
         },
         opts.update ? 'update' : (params.length === 0 ? 'install' : 'add')
       )
+      s4.end();
       return
     }
   }
@@ -155,7 +163,9 @@ when running add/update with the --workspace option')
   let workspacePackages!: WorkspacePackages
 
   if (opts.workspaceDir) {
+    const s5 = getSpan('arrayOfWorkspacePackagesToMap');
     workspacePackages = arrayOfWorkspacePackagesToMap(allProjects)
+    s5.end();
   }
 
   const store = await createOrConnectStoreController(opts)
@@ -181,7 +191,9 @@ when running add/update with the --workspace option')
     installOpts['nodeExecPath'] = process.env.NODE ?? process.execPath
   }
 
+  const s6 = getSpan('tryReadProjectManifest');
   let { manifest, writeProjectManifest } = await tryReadProjectManifest(opts.dir, opts)
+  s6.end();
   if (manifest === null) {
     if (opts.update) {
       throw new PnpmError('NO_IMPORTER_MANIFEST', 'No package.json found')
@@ -232,7 +244,9 @@ when running add/update with the --workspace option')
     return
   }
 
+  const si = getSpan('install');
   const updatedManifest = await install(manifest, installOpts)
+  si.end();
   if (opts.update === true && opts.save !== false) {
     await writeProjectManifest(updatedManifest)
   }
@@ -256,6 +270,7 @@ when running add/update with the --workspace option')
 
     if (opts.ignoreScripts) return
 
+    const sR = getSpan('rebuild');
     await rebuild(
       [
         {
@@ -270,6 +285,7 @@ when running add/update with the --workspace option')
         storeDir: store.dir,
       }
     )
+    sR.end();
   }
 }
 
@@ -277,4 +293,18 @@ function selectProjectByDir (projects: Project[], searchedDir: string) {
   const project = projects.find(({ dir }) => path.relative(dir, searchedDir) === '')
   if (project == null) return undefined
   return { [searchedDir]: { dependencies: [], package: project } }
+}
+
+const NS_PER_SEC = 1e9;
+export function getSpan(name: string) {
+  const startT = process.hrtime();
+  console.log(`${name} starts`);
+  return {
+    end: () => {
+      const diff = process.hrtime(startT);
+      const nanoSeconds = diff[0] * NS_PER_SEC + diff[1];;
+      const ms = Math.round(nanoSeconds / 1e6);
+      console.log(`${name} took ${ms} ms`);
+    }
+  }
 }
