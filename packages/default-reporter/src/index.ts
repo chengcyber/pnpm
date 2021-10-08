@@ -108,9 +108,6 @@ export function toOutput$ (
   const updateCheckPushStream = new Rx.Subject<logs.UpdateCheckLog>()
   setTimeout(() => {
     opts.streamParser['on']('data', (log: logs.Log) => {
-      if ((filterLog != null) && !filterLog(log)) {
-        return
-      }
       switch (log.name) {
       case 'pnpm:context':
         contextPushStream.next(log)
@@ -173,7 +170,9 @@ export function toOutput$ (
       case 'pnpm:global' as any: // eslint-disable-line
       case 'pnpm:store' as any: // eslint-disable-line
       case 'pnpm:lockfile' as any: // eslint-disable-line
-        otherPushStream.next(log)
+        if (!filterLog || filterLog(log)) {
+          otherPushStream.next(log);
+        }
         break
       }
     })

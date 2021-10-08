@@ -1147,8 +1147,12 @@ const _installInContext: InstallFunction = async (projects, ctx, opts) => {
       })(),
     ]);
   } else {
+    const sfu = getSpan('finishLockfileUpdates');
     await finishLockfileUpdates();
+    sfu.end();
+    const swwl = getSpan('writeWantedLockfile');
     await writeWantedLockfile(ctx.lockfileDir, newLockfile, lockfileOpts);
+    swwl.end();
 
     // This is only needed because otherwise the reporter will hang
     stageLogger.debug({
@@ -1157,11 +1161,15 @@ const _installInContext: InstallFunction = async (projects, ctx, opts) => {
     });
   }
 
+  const swtaff = getSpan('waitTillAllFetchingsFinish');
   await waitTillAllFetchingsFinish();
+  swtaff.end();
 
   summaryLogger.debug({ prefix: opts.lockfileDir });
 
+  const ssc = getSpan('storeController close');
   await opts.storeController.close();
+  ssc.end();
 
   return projectsToResolve.map(({ manifest, rootDir }) => ({
     rootDir,

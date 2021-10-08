@@ -227,6 +227,8 @@ export default async function resolveDependencies (
     resolvedDependencies: options.resolvedDependencies,
   })
   const postponedResolutionsQueue = [] as Array<(preferredVersions: PreferredVersions) => Promise<void>>
+  const spa = getSpan(`pkgAddresses for ${ctx.prefix}`);
+  console.log('extendedWantedDeps', extendedWantedDeps.map(x => x.wantedDependency.alias));
   const pkgAddresses = (
     await Promise.all(
       extendedWantedDeps.map(async (extendedWantedDep) => resolveDependenciesOfDependency(
@@ -239,6 +241,7 @@ export default async function resolveDependencies (
     )
   )
     .filter(Boolean) as PkgAddress[]
+  spa.end();
 
   const newPreferredVersions = { ...preferredVersions }
   for (const { depPath } of pkgAddresses) {
@@ -249,7 +252,9 @@ export default async function resolveDependencies (
     }
     newPreferredVersions[resolvedPackage.name][resolvedPackage.version] = 'version'
   }
+  const sss = getSpan(`postponedResolutionsQueue for ${ctx.prefix}`);
   await Promise.all(postponedResolutionsQueue.map(async (postponedResolution) => postponedResolution(newPreferredVersions)))
+  sss.end();
 
   return pkgAddresses
 }
@@ -312,6 +317,7 @@ async function resolveDependenciesOfDependency (
   }
   if (!resolveDependencyResult.isNew) return resolveDependencyResult
 
+  console.log('push to queue', extendedWantedDep.wantedDependency, options.parentPkg);
   postponedResolutionsQueue.push(async (preferredVersions) =>
     resolveChildren(
       ctx,
@@ -919,4 +925,18 @@ function peerDependenciesWithoutOwn (pkg: PackageManifest) {
   }
   if (isEmpty(result)) return undefined
   return result
+}
+
+const NS_PER_SEC = 1e9;
+export function getSpan(name: string) {
+  const startT = process.hrtime();
+  console.log(`${name} starts`);
+  return {
+    end: () => {
+      const diff = process.hrtime(startT);
+      const nanoSeconds = diff[0] * NS_PER_SEC + diff[1];;
+      const ms = Math.round(nanoSeconds / 1e6);
+      console.log(`${name} took ${ms} ms`);
+    }
+  }
 }
