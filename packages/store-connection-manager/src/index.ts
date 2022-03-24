@@ -41,6 +41,7 @@ export async function createOrConnectStoreController (
   const storeDir = await storePath(opts.dir, opts.storeDir)
   const connectionInfoDir = serverConnectionInfoDir(storeDir)
   const serverJsonPath = path.join(connectionInfoDir, 'server.json')
+  console.log('serverJsonPath', serverJsonPath);
   let serverJson = await tryLoadServerJson({ serverJsonPath, shouldRetryOnNoent: false })
   if (serverJson !== null) {
     if (serverJson.pnpmVersion !== packageManager.version) {
@@ -61,7 +62,7 @@ export async function createOrConnectStoreController (
   if (opts.useRunningStoreServer) {
     throw new PnpmError('NO_STORE_SERVER', 'No store server is running.')
   }
-  if (opts.useStoreServer) {
+  if (true) {
     runServerInBackground(storeDir)
     serverJson = await tryLoadServerJson({ serverJsonPath, shouldRetryOnNoent: true })
     logger.info({

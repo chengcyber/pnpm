@@ -2833,6 +2833,7 @@ importers:
       '@pnpm/read-package-json': workspace:5.0.4
       '@pnpm/resolve-dependencies': 'link:'
       '@pnpm/resolver-base': workspace:8.0.4
+      '@pnpm/store-connection-manager': workspace:*
       '@pnpm/store-controller-types': workspace:11.0.5
       '@pnpm/types': workspace:7.4.0
       '@types/ramda': 0.27.39
@@ -2857,6 +2858,7 @@ importers:
       '@pnpm/prune-lockfile': link:../prune-lockfile
       '@pnpm/read-package-json': link:../read-package-json
       '@pnpm/resolver-base': link:../resolver-base
+      '@pnpm/store-connection-manager': link:../store-connection-manager
       '@pnpm/store-controller-types': link:../store-controller-types
       '@pnpm/types': link:../types
       dependency-path: link:../dependency-path

@@ -1,3 +1,5 @@
+import path from 'path'
+import { Worker } from 'worker_threads';
 import { Lockfile } from '@pnpm/lockfile-types'
 import { PreferredVersions, Resolution, WorkspacePackages } from '@pnpm/resolver-base'
 import { StoreController } from '@pnpm/store-controller-types'
@@ -136,12 +138,36 @@ export default async function<T> (
       workspacePackages: opts.workspacePackages,
     }
     const sr = getSpan(`resolveDeps for ${importer.id}`);
-    directDepsByImporterId[importer.id] = await resolveDependencies(
-      resolveCtx,
-      importer.preferredVersions ?? {},
-      importer.wantedDependencies,
-      resolveOpts
-    )
+      const workerData = JSON.parse(JSON.stringify([
+        resolveCtx,
+        importer.preferredVersions ?? {},
+        importer.wantedDependencies,
+        resolveOpts
+      ]));
+      console.log('workerData', workerData);
+    const resolved = await new Promise((resolve, reject) => {
+      const worker = new Worker(path.resolve(__dirname, './worker/resolveDependenciesWorker.js'), {
+        workerData,
+      })
+      worker.on('message', resolve);
+      worker.on('error', (reason) => {
+        console.log('rrrrrrrrr');
+        reject(reason)
+      });
+      worker.on('exit', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Worker stopped with exit code ${code}`))
+        }
+      })
+    })
+    console.log(`worker resolved for ${importer.id}`, resolved);
+    directDepsByImporterId[importer.id] = resolved as any;
+    // directDepsByImporterId[importer.id] = await resolveDependencies(
+    //   resolveCtx,
+    //   importer.preferredVersions ?? {},
+    //   importer.wantedDependencies,
+    //   resolveOpts
+    // )
     sr.end();
   }))
   s1.end();

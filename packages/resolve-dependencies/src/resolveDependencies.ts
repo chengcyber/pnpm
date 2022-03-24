@@ -4,6 +4,7 @@ import {
   progressLogger,
   skippedOptionalDependencyLogger,
 } from '@pnpm/core-loggers'
+    import { createOrConnectStoreController } from '@pnpm/store-connection-manager'
 import PnpmError from '@pnpm/error'
 import {
   Lockfile,
@@ -227,8 +228,8 @@ export default async function resolveDependencies (
     resolvedDependencies: options.resolvedDependencies,
   })
   const postponedResolutionsQueue = [] as Array<(preferredVersions: PreferredVersions) => Promise<void>>
-  const spa = getSpan(`pkgAddresses for ${ctx.prefix}`);
-  console.log('extendedWantedDeps', extendedWantedDeps.map(x => x.wantedDependency.alias));
+  // const spa = getSpan(`pkgAddresses for ${ctx.prefix}`);
+  // console.log('extendedWantedDeps', extendedWantedDeps.map(x => x.wantedDependency.alias));
   const pkgAddresses = (
     await Promise.all(
       extendedWantedDeps.map(async (extendedWantedDep) => resolveDependenciesOfDependency(
@@ -241,7 +242,7 @@ export default async function resolveDependencies (
     )
   )
     .filter(Boolean) as PkgAddress[]
-  spa.end();
+  // spa.end();
 
   const newPreferredVersions = { ...preferredVersions }
   for (const { depPath } of pkgAddresses) {
@@ -252,9 +253,10 @@ export default async function resolveDependencies (
     }
     newPreferredVersions[resolvedPackage.name][resolvedPackage.version] = 'version'
   }
-  const sss = getSpan(`postponedResolutionsQueue for ${ctx.prefix}`);
+  // const sss = getSpan(`postponedResolutionsQueue for ${ctx.prefix}`);
   await Promise.all(postponedResolutionsQueue.map(async (postponedResolution) => postponedResolution(newPreferredVersions)))
-  sss.end();
+  // sss.end();
+  console.log('resolveDependencies returns', pkgAddresses);
 
   return pkgAddresses
 }
@@ -317,7 +319,7 @@ async function resolveDependenciesOfDependency (
   }
   if (!resolveDependencyResult.isNew) return resolveDependencyResult
 
-  console.log('push to queue', extendedWantedDep.wantedDependency, options.parentPkg);
+  // console.log('push to queue', extendedWantedDep.wantedDependency, options.parentPkg);
   postponedResolutionsQueue.push(async (preferredVersions) =>
     resolveChildren(
       ctx,
@@ -601,7 +603,13 @@ async function resolveDependency (
     }
   }
   try {
-    pkgResponse = await ctx.storeController.requestPackage(wantedDependency, {
+    let requestPackage = ctx.storeController?.requestPackage || (await createOrConnectStoreController(
+      {
+        dir: '/Users/admin/workspace/pnpm',
+        useRunningStoreServer: true,
+      } as any,
+    )).ctrl.requestPackage;
+    pkgResponse = await requestPackage(wantedDependency, {
       alwaysTryWorkspacePackages: ctx.linkWorkspacePackagesDepth >= options.currentDepth,
       currentPkg: currentPkg
         ? {
@@ -639,6 +647,7 @@ async function resolveDependency (
       })
       return null
     }
+    console.log('error for wantedDependency', wantedDependency.alias, err.message);
     err.pkgsStack = nodeIdToParents(options.parentPkg.nodeId, ctx.resolvedPackagesByDepPath)
     throw err
   }
@@ -896,7 +905,7 @@ function getResolvedPackage (
     peerDependenciesMeta: options.pkg.peerDependenciesMeta,
     prepare: options.prepare,
     prod: !options.wantedDependency.dev && !options.wantedDependency.optional,
-    requiresBuild: options.neverBuiltDependencies.has(options.pkg.name)
+    requiresBuild: options.neverBuiltDependencies?.has?.(options.pkg.name)
       ? false
       : ((options.dependencyLockfile != null) ? Boolean(options.dependencyLockfile.requiresBuild) : undefined),
     resolution: options.pkgResponse.body.resolution,
