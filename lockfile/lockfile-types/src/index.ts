@@ -18,6 +18,7 @@ export interface Lockfile {
   packageExtensionsChecksum?: string
   patchedDependencies?: Record<string, PatchFile>
   settings?: LockfileSettings
+  pnpmfileVersion?: string
 }
 
 export interface ProjectSnapshot {

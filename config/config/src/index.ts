@@ -551,7 +551,11 @@ export async function getConfig (
   pnpmConfig.workspaceConcurrency = getWorkspaceConcurrency(pnpmConfig.workspaceConcurrency)
 
   if (!pnpmConfig.ignorePnpmfile) {
-    pnpmConfig.hooks = requireHooks(pnpmConfig.lockfileDir ?? pnpmConfig.dir, pnpmConfig)
+    const { version, ...cookedHooks } = requireHooks(pnpmConfig.lockfileDir ?? pnpmConfig.dir, pnpmConfig) || {}
+    pnpmConfig.hooks = cookedHooks
+    if (version) {
+      pnpmConfig.pnpmfileVersion = version
+    }
   }
   pnpmConfig.rootProjectManifestDir = pnpmConfig.lockfileDir ?? pnpmConfig.workspaceDir ?? pnpmConfig.dir
   pnpmConfig.rootProjectManifest = await safeReadProjectManifestOnly(pnpmConfig.rootProjectManifestDir) ?? undefined

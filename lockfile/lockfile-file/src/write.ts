@@ -167,6 +167,9 @@ export function normalizeLockfile (lockfile: Lockfile, opts: NormalizeLockfileOp
   if (!lockfileToSave.packageExtensionsChecksum) {
     delete lockfileToSave.packageExtensionsChecksum
   }
+  if (!lockfileToSave.pnpmfileVersion) {
+    delete lockfileToSave.pnpmfileVersion
+  }
   return lockfileToSave
 }
 

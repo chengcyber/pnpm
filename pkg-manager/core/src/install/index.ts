@@ -342,6 +342,7 @@ export async function mutateModules (
         onlyBuiltDependencies: opts.onlyBuiltDependencies,
         packageExtensionsChecksum,
         patchedDependencies,
+        pnpmfileVersion: opts.pnpmfileVersion,
       })
       outdatedLockfileSettings = outdatedLockfileSettingName != null
       if (frozenLockfile && outdatedLockfileSettings) {
@@ -362,6 +363,7 @@ export async function mutateModules (
       ctx.wantedLockfile.onlyBuiltDependencies = opts.onlyBuiltDependencies
       ctx.wantedLockfile.packageExtensionsChecksum = packageExtensionsChecksum
       ctx.wantedLockfile.patchedDependencies = patchedDependencies
+      ctx.wantedLockfile.pnpmfileVersion = opts.pnpmfileVersion
     } else if (!frozenLockfile) {
       ctx.wantedLockfile.settings = {
         autoInstallPeers: opts.autoInstallPeers,
@@ -430,7 +432,6 @@ Note that in CI environments, this setting is enabled by default.`,
     Failure reason:
     ${detailedReason ?? ''}`,
               })
-            /* eslint-enable @typescript-eslint/restrict-template-expressions */
           }
         }
       }
@@ -716,6 +717,7 @@ function getOutdatedLockfileSetting (
     patchedDependencies,
     autoInstallPeers,
     excludeLinksFromLockfile,
+    pnpmfileVersion,
   }: {
     neverBuiltDependencies?: string[]
     onlyBuiltDependencies?: string[]
@@ -724,6 +726,7 @@ function getOutdatedLockfileSetting (
     patchedDependencies?: Record<string, PatchFile>
     autoInstallPeers?: boolean
     excludeLinksFromLockfile?: boolean
+    pnpmfileVersion?: string
   }
 ) {
   if (!equals(lockfile.overrides ?? {}, overrides ?? {})) {
@@ -746,6 +749,9 @@ function getOutdatedLockfileSetting (
   }
   if (lockfile.settings?.excludeLinksFromLockfile != null && lockfile.settings.excludeLinksFromLockfile !== excludeLinksFromLockfile) {
     return 'settings.excludeLinksFromLockfile'
+  }
+  if (lockfile.pnpmfileVersion != null && lockfile.pnpmfileVersion !== pnpmfileVersion) {
+    return 'pnpmfileVersion'
   }
   return null
 }

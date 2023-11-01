@@ -122,6 +122,7 @@ export interface Config {
   childConcurrency?: number
   ignorePnpmfile?: boolean
   pnpmfile: string
+  pnpmfileVersion?: string
   hooks?: Hooks
   packageImportMethod?: 'auto' | 'hardlink' | 'copy' | 'clone' | 'clone-or-copy'
   hoistPattern?: string[]

@@ -74,6 +74,7 @@ export interface StrictInstallOptions {
     version: string
   }
   pruneLockfileImporters: boolean
+  pnpmfileVersion?: string
   hooks: {
     readPackage?: ReadPackageHook[]
     preResolution?: (ctx: PreResolutionHookContext) => Promise<void>

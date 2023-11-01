@@ -44,7 +44,7 @@ export function requireHooks (
     globalPnpmfile?: string
     pnpmfile?: string
   }
-): CookedHooks {
+): CookedHooks & { version?: string } {
   const globalPnpmfile = opts.globalPnpmfile && requirePnpmfile(pathAbsolute(opts.globalPnpmfile, prefix), prefix)
   let globalHooks: Hooks = globalPnpmfile?.hooks
 
@@ -52,7 +52,7 @@ export function requireHooks (
     requirePnpmfile(path.join(prefix, '.pnpmfile.cjs'), prefix)
   let hooks: Hooks = pnpmFile?.hooks
 
-  if (!globalHooks && !hooks) return { afterAllResolved: [], filterLog: [], readPackage: [] }
+  if (!globalHooks && !hooks) return { afterAllResolved: [], filterLog: [], readPackage: [], version: pnpmFile.version }
   globalHooks = globalHooks || {}
   hooks = hooks || {}
   const cookedHooks: CookedHooks & Required<Pick<CookedHooks, 'filterLog'>> = {
@@ -91,7 +91,10 @@ export function requireHooks (
 
   cookedHooks.fetchers = globalHooks.fetchers
 
-  return cookedHooks
+  return {
+    ...cookedHooks,
+    version: pnpmFile?.version,
+  }
 }
 
 function createReadPackageHookContext (calledFrom: string, prefix: string, hook: string): HookContext {

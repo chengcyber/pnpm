@@ -43,3 +43,11 @@ test('filterLog hook combines with the global hook', () => {
     prefix: 'test',
   })).toBeFalsy()
 })
+
+test('get pnpmfile version by requireHooks', () => {
+  const pnpmfile = path.join(__dirname, 'pnpmfiles/pnpmfileVersion.js')
+  const { version } = requireHooks(__dirname, {
+    pnpmfile,
+  })
+  expect(version).toBe('1')
+})
